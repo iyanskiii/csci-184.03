@@ -58,44 +58,55 @@ print(f"Key: {key} ('{chr(key)}')")
 print("Decrypted message:", decrypted_message)
 
 #1.4
-def num2letter(i):
-  return chr(ord('a') + i)
+import binascii
+import string
 
-def try_decrypt_xor(c, key):
-  plaintext = ""
-  for byte in c:
-    plaintext += chr(byte ^ key)
-  return plaintext
+def xor_decrypt(data, key):
+    """Decrypts data using a single-byte XOR key."""
+    return bytes(b ^ key for b in data)
 
-def calc_score(text):
-  score = 0
-  for char in text.lower():
-    if char in FREQ_TABLE:
-      score += FREQ_TABLE[char]
-  return score
+def score_text(text):
+    """Scores text based on English letter frequency."""
+    common_chars = string.ascii_letters + " "
+    return sum(c in common_chars.encode() for c in text)
 
-def try_decrypt_xor(c, shift):
-  def xor_decrypt(ciphertext, key):
-    decrypted_text = ""
-    for byte in ciphertext:
-      decrypted_text += chr(byte ^ key)
-    return decrypted_text
+def detect_xor_encrypted_string(filename):
+    """Finds the line in the file that was XOR-encrypted with a single character."""
+    with open(filename, 'r', encoding='utf-8') as f:
+        lines = f.read().splitlines()
 
-    best_key = None
-    best_text = ""
     best_score = 0
+    best_plaintext = None
+    best_line = None
 
-    for key in range(256):
+    for line in lines:
+        try:
+            data = binascii.unhexlify(line)  # Convert hex string to bytes
+        except binascii.Error:
+            print(f"Skipping invalid hex string: {line}")
+            continue  # Skip lines that are not valid hex
 
-      decrypted_text = xor_decrypt(ciphertext, key)
-      score = calc_score(decrypted_text)
+        for key in range(256):  # Try all single-byte XOR keys (0-255)
+            decrypted = xor_decrypt(data, key)
+            score = score_text(decrypted)
 
-    if score > best_score:
-      best_key = key
-      best_text = decrypted_text
-      best_score = score
+            if score > best_score:
+                best_score = score
+                best_plaintext = decrypted
+                best_line = line
 
-    return best_key, best_text
+    return best_line, best_plaintext.decode(errors="ignore") if best_plaintext else None
+
+# Run the function
+if __name__ == "__main__":
+    filename = "xor_strings.txt"
+    line, plaintext = detect_xor_encrypted_string(filename)
+
+    if plaintext:
+        print("Encrypted Line:", line)
+        print("Decrypted Text:", plaintext)
+    else:
+        print("No XOR-encrypted string found.")
 
 #1.5
 from binascii import hexlify, unhexlify
