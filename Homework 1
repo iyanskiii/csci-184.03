@@ -26,44 +26,36 @@ def xor_bytes(a, b):
     return bytes(result) 
 
 #1.3
-def num2letter(i):
-  return chr(ord('a') + i)
-
-def try_decrypt_xor(c, key):
-  plaintext = ""
-  for byte in c:
-    plaintext += chr(byte ^ key)
-  return plaintext
-
 def calc_score(text):
-  score = 0
-  for char in text.lower():
-    if char in FREQ_TABLE:
-      score += FREQ_TABLE[char]
-  return score
+    score = 0
+    for char in text.lower():
+        if char in FREQ_TABLE:
+            score += FREQ_TABLE[char]
+    return score
 
-def try_decrypt_xor(c, shift):
-  def xor_decrypt(ciphertext, key):
-    decrypted_text = ""
-    for byte in ciphertext:
-      decrypted_text += chr(byte ^ key)
-    return decrypted_text
+def xor_decrypt(c, key):
+    return "".join(chr(byte ^ key) for byte in c)
 
+def try_decrypt_xor(c):
     best_key = None
     best_text = ""
-    best_score = 0
+    best_score = float('-inf')
 
     for key in range(256):
+        decrypted_text = xor_decrypt(c, key)
+        score = calc_score(decrypted_text)
 
-      decrypted_text = xor_decrypt(ciphertext, key)
-      score = calc_score(decrypted_text)
-
-    if score > best_score:
-      best_key = key
-      best_text = decrypted_text
-      best_score = score
+        if score > best_score:
+            best_key = key
+            best_text = decrypted_text
+            best_score = score
 
     return best_key, best_text
+
+ciphertext = bytes.fromhex("264f0300190a4f0d06084f1c0a02061f1d06020a1c4f0e010b4f264f0c0e0101001b4f03060a4e")
+key, decrypted_message = try_decrypt_xor(ciphertext)
+print(f"Key: {key} ('{chr(key)}')")
+print("Decrypted message:", decrypted_message)
 
 #1.4
 def num2letter(i):
